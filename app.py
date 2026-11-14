@@ -26,8 +26,13 @@ header[data-testid="stHeader"], [data-testid="stToolbar"], #MainMenu, footer {di
 .tot .lbl {font-size: .85rem; opacity: .75;}
 .tot .big {font-size: 2.1rem; font-weight: 700; line-height: 1.15;}
 .tot .sub {font-size: 1rem; margin-top: 2px;}
-.card {display: flex; justify-content: space-between; align-items: center; gap: 10px;
-       padding: 11px 14px; margin: 6px 0; border-radius: 12px; background: var(--card);}
+.card {padding: 11px 14px; margin: 6px 0; border-radius: 12px; background: var(--card);}
+.riga {display: flex; justify-content: space-between; align-items: center; gap: 10px;}
+.carico {display: flex; justify-content: space-between; margin-top: 7px; padding-top: 6px;
+         border-top: 1px solid rgba(127,127,127,.2); font-size: .85rem;}
+.carico .val {font-weight: 600;}
+.tot .sep {border-top: 1px solid rgba(127,127,127,.25); margin: 10px 0 8px;}
+.tot .med {font-size: 1.35rem; font-weight: 700;}
 .card .nome {font-weight: 600; font-size: 1.02rem;}
 .card .dett {font-size: .8rem; opacity: .7; margin-top: 2px;}
 .card .dx {text-align: right; white-space: nowrap;}
@@ -154,12 +159,17 @@ for t in titoli:
     q = float(t["quantita"])
     var = d["prezzo"] / d["prec"] - 1 if d.get("prec") else 0.0
     impatto = q * (d["prezzo"] - d["prec"]) if d.get("prec") else 0.0
+    inv = float(t.get("investito", 0) or 0)
     righe.append({"nome": t["nome"], "prezzo": d["prezzo"], "var": var, "impatto": impatto,
-                  "valore": q * d["prezzo"], "q": q, "ora": d["ora"].astimezone(ROMA)})
+                  "valore": q * d["prezzo"], "q": q, "ora": d["ora"].astimezone(ROMA),
+                  "inv": inv, "utile": q * d["prezzo"] - inv if inv else None})
 
 valore = sum(r["valore"] for r in righe)
 impatto = sum(r["impatto"] for r in righe)
 var_tot = impatto / (valore - impatto) if valore - impatto else 0.0
+con_carico = [r for r in righe if r["utile"] is not None]
+inv_tot = sum(r["inv"] for r in con_carico)
+utile_tot = sum(r["utile"] for r in con_carico)
 ultima = max((r["ora"] for r in righe), default=dati["_alle"])
 oggi = dt.datetime.now(ROMA).date()
 etichetta = "Variazione di oggi" if ultima.date() == oggi else f"Ultima seduta, {ultima:%d/%m}"
@@ -170,29 +180,40 @@ st.markdown(f"""
   <div class="big {classe(impatto)}">{eur(impatto, True)}</div>
   <div class="sub"><span class="{classe(var_tot)}"><b>{pct(var_tot)}</b></span>
      &nbsp;·&nbsp; valore {eur(valore)}</div>
+  {f'''<div class="sep"></div>
+  <div class="lbl">Dal carico (investiti {eur(inv_tot)})</div>
+  <div class="med {classe(utile_tot)}">{eur(utile_tot, True)}
+     <span style="font-size:1rem">{pct(utile_tot / inv_tot)}</span></div>''' if inv_tot else ''}
 </div>
 """, unsafe_allow_html=True)
 
-ordine = st.radio("Ordina per", ["Impatto €", "Variazione %", "Nome"], horizontal=True,
+ordine = st.radio("Ordina per", ["Oggi €", "Oggi %", "Dal carico", "Nome"], horizontal=True,
                   label_visibility="collapsed")
-chiave = {"Impatto €": lambda r: -r["impatto"], "Variazione %": lambda r: -r["var"],
+chiave = {"Oggi €": lambda r: -r["impatto"], "Oggi %": lambda r: -r["var"],
+          "Dal carico": lambda r: -(r["utile"] or 0),
           "Nome": lambda r: r["nome"].lower()}[ordine]
 
 html = []
 for r in sorted(righe, key=chiave):
     prezzo = f"{r['prezzo']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    carico = ""
+    if r["utile"] is not None:
+        carico = (f'<div class="carico"><span>Dal carico · investiti {eur(r["inv"])}</span>'
+                  f'<span class="val {classe(r["utile"])}">{eur(r["utile"], True)} · '
+                  f'{pct(r["utile"] / r["inv"])}</span></div>')
     html.append(f"""
-<div class="card">
+<div class="card"><div class="riga">
   <div><div class="nome">{r['nome']}</div>
        <div class="dett">{prezzo} € · {f"{r['q']:,.0f}".replace(",", ".")} pz · {r['ora']:%d/%m %H:%M}</div></div>
   <div class="dx"><div class="pct {classe(r['var'])}">{pct(r['var'])}</div>
        <div class="eur {classe(r['impatto'])}">{eur(r['impatto'], True)}</div></div>
-</div>""")
+</div>{carico}</div>""")
 st.markdown("".join(html), unsafe_allow_html=True)
 
 if errori:
     st.warning("Prezzo non disponibile per: " + ", ".join(errori))
 
 st.markdown(f"""<div class="nota">Aggiornato alle {dati['_alle']:%H:%M:%S} · fonte Yahoo Finance,
-dato non ufficiale e con possibile ritardo. Variazione rispetto alla chiusura della seduta precedente.</div>""",
+dato non ufficiale e con possibile ritardo. Oggi = rispetto alla chiusura della seduta precedente.
+Dal carico = valore attuale meno investito netto (al netto di dividendi incassati).</div>""",
             unsafe_allow_html=True)
