@@ -15,7 +15,7 @@ import streamlit as st
 ROMA = ZoneInfo("Europe/Rome")
 URL = "https://query1.finance.yahoo.com/v8/finance/chart/{}"
 
-st.set_page_config(page_title="Variazione oggi", page_icon="📈", layout="centered")
+st.set_page_config(page_title="Pacchetto azioni", page_icon="📈", layout="centered")
 
 st.markdown("""
 <style>
@@ -55,7 +55,7 @@ def accesso_ok() -> bool:
         return False
     if st.session_state.get("ok"):
         return True
-    st.markdown("### Variazione oggi")
+    st.markdown("### Pacchetto azioni")
     tentativo = st.text_input("Password", type="password")
     if tentativo:
         if hmac.compare_digest(tentativo, str(pwd)):
@@ -144,7 +144,7 @@ if not titoli:
     st.error("Nessun titolo configurato nei secrets (sezione [[titoli]]).")
     st.stop()
 
-st.markdown('<div class="titolo">Variazione oggi</div>', unsafe_allow_html=True)
+st.markdown('<div class="titolo">Pacchetto azioni</div>', unsafe_allow_html=True)
 if st.button("Aggiorna prezzi", type="primary", use_container_width=True):
     scarica.clear()
 
