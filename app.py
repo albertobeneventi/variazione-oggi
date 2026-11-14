@@ -45,7 +45,10 @@ header[data-testid="stHeader"], [data-testid="stToolbar"], #MainMenu, footer {di
 # ----------------------------------------------------------------------------- accesso
 def accesso_ok() -> bool:
     pwd = st.secrets.get("password")
-    if not pwd or st.session_state.get("ok"):
+    if not pwd:  # senza password l'app non mostra nulla
+        st.error("Password non configurata nei Secrets: aggiungi la riga password = \"...\".")
+        return False
+    if st.session_state.get("ok"):
         return True
     st.markdown("### Variazione oggi")
     tentativo = st.text_input("Password", type="password")
