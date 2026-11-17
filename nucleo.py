@@ -210,7 +210,13 @@ def main(titolo: str, icona: str = "📈", fondi: bool = False):
     ultima = max((r["ora"] for r in righe), default=dati["_alle"])
     oggi = dt.datetime.now(ROMA).date()
     if fondi:
-        etichetta = f"Ultima variazione dei NAV (al {ultima:%d/%m})"
+        # ogni fondo pubblica il NAV con il suo ritardo: si dichiarano tutte le date presenti
+        date_nav = sorted({r["ora"].date() for r in righe})
+        if len(date_nav) <= 1:
+            etichetta = f"Ultima variazione dei NAV (al {ultima:%d/%m})"
+        else:
+            elenco = ", ".join(f"{d:%d/%m}" for d in date_nav[:-1]) + f" e {date_nav[-1]:%d/%m}"
+            etichetta = f"Ultima variazione di ogni fondo (NAV al {elenco})"
         lab_v, lab_p = "Var. €", "Var. %"
     else:
         etichetta = "Variazione di oggi" if ultima.date() == oggi else f"Ultima seduta, {ultima:%d/%m}"
@@ -261,8 +267,9 @@ def main(titolo: str, icona: str = "📈", fondi: bool = False):
 
     if fondi:
         spiega = ("fonti Yahoo Finance e Financial Times, dati non ufficiali. I NAV dei fondi sono "
-                  "giornalieri e arrivano con uno o due giorni di ritardo; la variazione è rispetto "
-                  "al NAV precedente.")
+                  "giornalieri e ogni società li pubblica con il suo ritardo (uno o due giorni), quindi "
+                  "le date possono differire tra fondi; la variazione di ciascuno è rispetto al "
+                  "suo NAV precedente.")
     else:
         spiega = ("fonte Yahoo Finance, dato non ufficiale e con possibile ritardo. "
                   "Oggi = rispetto alla chiusura della seduta precedente.")
