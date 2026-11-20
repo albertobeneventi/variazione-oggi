@@ -40,6 +40,8 @@ header[data-testid="stHeader"], [data-testid="stToolbar"], #MainMenu, footer {di
 .tot .sep {border-top: 1px solid rgba(127,127,127,.25); margin: 10px 0 8px;}
 .tot .med {font-size: 1.35rem; font-weight: 700;}
 .card .nome {font-weight: 600; font-size: 1.02rem;}
+.card .valf {font-size: 1rem; margin-top: 3px;}
+.card .valf b {font-size: 1.15rem;}
 .card .dett {font-size: .8rem; opacity: .7; margin-top: 2px;}
 .card .dx {text-align: right; white-space: nowrap;}
 .card .pct {font-weight: 700; font-size: 1.1rem;}
@@ -249,18 +251,16 @@ def main(titolo: str, icona: str = "📈", fondi: bool = False):
         else:
             dett = (f"{num_it(r['prezzo'], 2)} € · {num_it(r['q'], 0)} pz · "
                     f"{r['ora']:%d/%m %H:%M}")
+        valf = (f'<div class="valf">Valore attuale <b>{eur(r["valore"])}</b></div>'
+                if fondi else "")
         carico = ""
-        if fondi and r["utile"] is None:
-            carico = f'<div class="carico"><span>Valore attuale <b>{eur(r["valore"])}</b></span></div>'
-        elif r["utile"] is not None:
-            sx = (f'Valore <b>{eur(r["valore"])}</b> · investiti {eur(r["inv"])}' if fondi
-                  else f'Dal carico · investiti {eur(r["inv"])}')
-            carico = (f'<div class="carico"><span>{sx}</span>'
+        if r["utile"] is not None:
+            carico = (f'<div class="carico"><span>Dal carico · investiti {eur(r["inv"])}</span>'
                       f'<span class="val {classe(r["utile"])}">{eur(r["utile"], True)} · '
                       f'{pct(r["utile"] / r["inv"])}</span></div>')
         html.append(f"""
 <div class="card"><div class="riga">
-  <div><div class="nome">{r['nome']}</div><div class="dett">{dett}</div></div>
+  <div><div class="nome">{r['nome']}</div>{valf}<div class="dett">{dett}</div></div>
   <div class="dx"><div class="pct {classe(r['var'])}">{pct(r['var'])}</div>
        <div class="eur {classe(r['impatto'])}">{eur(r['impatto'], True)}</div></div>
 </div>{carico}</div>""")
