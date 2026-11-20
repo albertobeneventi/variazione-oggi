@@ -235,10 +235,10 @@ def main(titolo: str, icona: str = "📈", fondi: bool = False):
 </div>
 """, unsafe_allow_html=True)
 
-    ordine = st.radio("Ordina per", [lab_v, lab_p, "Dal carico", "Nome"], horizontal=True,
-                      label_visibility="collapsed")
+    scelte = [lab_v, lab_p, "Dal carico"] + (["Valore"] if fondi else []) + ["Nome"]
+    ordine = st.radio("Ordina per", scelte, horizontal=True, label_visibility="collapsed")
     chiave = {lab_v: lambda r: -r["impatto"], lab_p: lambda r: -r["var"],
-              "Dal carico": lambda r: -(r["utile"] or 0),
+              "Dal carico": lambda r: -(r["utile"] or 0), "Valore": lambda r: -r["valore"],
               "Nome": lambda r: r["nome"].lower()}[ordine]
 
     html = []
@@ -250,8 +250,12 @@ def main(titolo: str, icona: str = "📈", fondi: bool = False):
             dett = (f"{num_it(r['prezzo'], 2)} € · {num_it(r['q'], 0)} pz · "
                     f"{r['ora']:%d/%m %H:%M}")
         carico = ""
-        if r["utile"] is not None:
-            carico = (f'<div class="carico"><span>Dal carico · investiti {eur(r["inv"])}</span>'
+        if fondi and r["utile"] is None:
+            carico = f'<div class="carico"><span>Valore attuale <b>{eur(r["valore"])}</b></span></div>'
+        elif r["utile"] is not None:
+            sx = (f'Valore <b>{eur(r["valore"])}</b> · investiti {eur(r["inv"])}' if fondi
+                  else f'Dal carico · investiti {eur(r["inv"])}')
+            carico = (f'<div class="carico"><span>{sx}</span>'
                       f'<span class="val {classe(r["utile"])}">{eur(r["utile"], True)} · '
                       f'{pct(r["utile"] / r["inv"])}</span></div>')
         html.append(f"""
